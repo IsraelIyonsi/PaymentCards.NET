@@ -12,13 +12,30 @@ public class LuhnChecksumTests
         }
     }
 
+    /// <summary>
+    /// Every way a single digit of every fixture PAN can be altered to a different digit: each
+    /// digit position crossed with each of the 9 possible non-identity replacement values. This
+    /// is exhaustive per fixture, not a spot check at one position with one delta, which is what
+    /// makes it a valid demonstration that Luhn catches every single-digit substitution rather
+    /// than a single example of it doing so.
+    /// </summary>
     public static IEnumerable<object[]> GatewayCardsWithSingleDigitCorruption()
     {
         foreach (var card in GatewayTestCardFixtures.All)
         {
-            var corruptedDigit = (char)('0' + (card.Number[2] - '0' + 1) % 10);
-            var corrupted = string.Concat(card.Number[..2], corruptedDigit, card.Number[3..]);
-            yield return [corrupted];
+            for (var position = 0; position < card.Number.Length; position++)
+            {
+                var originalDigit = card.Number[position] - '0';
+                for (var delta = 1; delta <= 9; delta++)
+                {
+                    var corruptedDigit = (char)('0' + (originalDigit + delta) % 10);
+                    var corrupted = string.Concat(
+                        card.Number[..position],
+                        corruptedDigit,
+                        card.Number[(position + 1)..]);
+                    yield return [corrupted];
+                }
+            }
         }
     }
 

@@ -74,7 +74,12 @@ logger.LogInformation("Charging {Scheme} card {Masked}", card.Scheme, card.Maske
 
 Detection is driven by a single table of published issuer identification number (IIN) ranges covering Visa, Mastercard (including the 2221-2720 second range), American Express, Discover, Diners Club, JCB, UnionPay, Maestro, and Verve (5060, 5061, 5078, and 6500). Verve's ranges are checked before Discover's and Maestro's broader ranges so a Verve PAN never gets misclassified as Mastercard or Discover just because it starts with a digit those schemes also use.
 
-The test suite embeds the standard test card numbers published in Stripe's, Paystack's, and Interswitch's own sandbox documentation as fixtures and asserts exact scheme and Luhn results against them, not against hand-built numbers alone. It also asserts that corrupting a single digit of any of those numbers always fails the Luhn check, and that every IIN range boundary resolves to the correct neighboring scheme rather than bleeding into it.
+The test suite embeds the standard test card numbers published in Stripe's, Paystack's, and Interswitch's own sandbox documentation as fixtures and asserts exact scheme and Luhn results against them, not against hand-built numbers alone. It also asserts that corrupting a single digit of any of those numbers, at any position, to any other digit, always fails the Luhn check, and that every IIN range boundary resolves to the correct neighboring scheme rather than bleeding into it.
+
+### Known tradeoffs
+
+- **Verve ranges are the spec-published blocks, not Interswitch's narrower live ranges.** Verve's 5060/5061/5078/6500 prefixes are the ranges documented by the scheme itself. Interswitch's actual issuance is narrower (for example 506099-506198 and 650002-650027 within those blocks), so a genuine Discover PAN starting 6500, or a genuine Maestro PAN in the unassigned part of 5078xx, would misclassify as Verve. If you route real (non-Nigerian) traffic and need to disambiguate at that boundary, narrow `CardSchemeCatalog`'s Verve ranges to your issuer's confirmed set.
+- **Valid-length tables are pragmatic, not exhaustive.** `HasValidLength` uses the lengths actually seen on the gateway test fixtures this library validates against: JCB is limited to 16 (JCB also issues up to 19), Discover to 16 and 19 (17 and 18 are omitted), and Diners Club to 14 and 16. A real card at one of the omitted lengths will pass `IsLuhnValid` but report `HasValidLength: false`.
 
 ## Zero dependencies, AOT-friendly
 

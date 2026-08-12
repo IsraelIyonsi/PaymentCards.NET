@@ -56,6 +56,28 @@ public class CardExpiryTests
     }
 
     [Theory]
+    [InlineData(1, 0)]
+    [InlineData(1, -1)]
+    [InlineData(1, 10000)]
+    public void Constructor_throws_eagerly_for_out_of_range_year(int month, int year)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CardExpiry(month, year));
+    }
+
+    [Fact]
+    public void Constructor_accepts_the_minimum_and_maximum_representable_years()
+    {
+        Assert.Equal(1, new CardExpiry(1, 1).Year);
+        Assert.Equal(9999, new CardExpiry(1, 9999).Year);
+    }
+
+    [Fact]
+    public void TryParse_rejects_a_four_digit_year_below_the_minimum_instead_of_throwing()
+    {
+        Assert.False(CardExpiry.TryParse("01/0000", out _));
+    }
+
+    [Theory]
     [InlineData(2, 2024, 29)]
     [InlineData(2, 2026, 28)]
     [InlineData(4, 2026, 30)]
@@ -93,6 +115,8 @@ public class CardExpiryTests
     [InlineData(1, 2026, "01/26")]
     [InlineData(12, 2026, "12/26")]
     [InlineData(9, 2099, "09/99")]
+    [InlineData(1, 2100, "01/00")]
+    [InlineData(1, 1999, "01/99")]
     public void ToString_formats_as_two_digit_month_slash_two_digit_year(int month, int year, string expected)
     {
         Assert.Equal(expected, new CardExpiry(month, year).ToString());

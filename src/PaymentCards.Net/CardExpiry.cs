@@ -15,14 +15,21 @@ public readonly record struct CardExpiry
     private const int FourDigitYearLength = 4;
     private const int TwoDigitYearCentury = 2000;
     private const int RequiredMonthLength = 2;
+    private const int MinimumYear = 1;
+    private const int MaximumYear = 9999;
+    private const int TwoDigitYearModulus = 100;
 
     /// <summary>
     /// Initializes a new <see cref="CardExpiry"/>.
     /// </summary>
     /// <param name="month">The expiry month, from 1 (January) to 12 (December).</param>
-    /// <param name="year">The expiry year, as a four-digit calendar year.</param>
+    /// <param name="year">
+    /// The expiry year, as a four-digit calendar year between 1 and 9999 (the range
+    /// <see cref="DateOnly"/> can represent).
+    /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// <paramref name="month"/> is not between 1 and 12.
+    /// <paramref name="month"/> is not between 1 and 12, or <paramref name="year"/> is not
+    /// between 1 and 9999.
     /// </exception>
     public CardExpiry(int month, int year)
     {
@@ -32,6 +39,14 @@ public readonly record struct CardExpiry
                 nameof(month),
                 month,
                 $"Month must be between {MinimumMonth} and {MaximumMonth}.");
+        }
+
+        if (year is < MinimumYear or > MaximumYear)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(year),
+                year,
+                $"Year must be between {MinimumYear} and {MaximumYear}.");
         }
 
         Month = month;
@@ -132,7 +147,7 @@ public readonly record struct CardExpiry
             _ => -1
         };
 
-        if (year < 0)
+        if (year is < MinimumYear or > MaximumYear)
         {
             return false;
         }
@@ -172,7 +187,7 @@ public readonly record struct CardExpiry
     /// <returns>The formatted expiry.</returns>
     public override string ToString()
     {
-        var twoDigitYear = Year % TwoDigitYearCentury;
+        var twoDigitYear = Year % TwoDigitYearModulus;
         return string.Create(
             CultureInfo.InvariantCulture,
             $"{Month:D2}{SlashSeparator}{twoDigitYear:D2}");
